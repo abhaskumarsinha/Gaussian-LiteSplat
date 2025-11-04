@@ -19,7 +19,7 @@ from .COLMAP import convert_colmap_scene  # Assuming COLMAP.py defines this func
 
 __all__ = [
     "import_gaussian_scene",
-    "convert_colmap_scene",
+    "convert_colmap_to_gaussians",
 ]
 
 __version__ = "0.1.0"
