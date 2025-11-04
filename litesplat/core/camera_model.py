@@ -1,6 +1,11 @@
 from keras import ops
 from PIL import Image
 
+import keras
+import numpy as np
+import matplotlib.pyplot as plt
+from tqdm.auto import tqdm
+
 
 class CameraLayer(keras.layers.Layer):
     """
