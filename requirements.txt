@@ -1,0 +1,9 @@
+# Core dependencies
+keras>=3.10
+numpy>=1.24
+matplotlib>=3.7
+tqdm>=4.66
+Pillow>=10.0  # For image I/O in camera_model.py
+
+# Optional (recommended for notebooks and visualization)
+jupyter>=1.0
