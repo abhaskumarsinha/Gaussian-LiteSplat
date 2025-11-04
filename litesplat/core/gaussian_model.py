@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 
-from autosplat.io import import_gaussian_scene
+from io import import_gaussian_scene
 
 class GaussianParameterLayer(keras.layers.Layer):
     """
