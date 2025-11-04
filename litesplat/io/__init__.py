@@ -15,7 +15,7 @@ WIP
 """
 
 from .import_gaussians import import_gaussian_scene
-from .COLMAP import convert_colmap_scene  # Assuming COLMAP.py defines this function
+from .COLMAP import convert_colmap_to_gaussians  # Assuming COLMAP.py defines this function
 
 __all__ = [
     "import_gaussian_scene",
