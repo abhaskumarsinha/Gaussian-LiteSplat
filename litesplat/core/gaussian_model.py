@@ -11,7 +11,7 @@ class GaussianParameterLayer(keras.layers.Layer):
     Keras Layer that imports and holds Gaussian parameters as trainable weights.
     """
 
-    def __init__(self, scene_dir, trainable=True, total_gaussians=None **kwargs):
+    def __init__(self, scene_dir, trainable=True, total_gaussians=None, **kwargs):
         super().__init__(**kwargs)
         self.scene_dir = scene_dir
         self.trainable_flag = trainable
