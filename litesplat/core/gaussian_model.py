@@ -4,17 +4,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 
+from autosplat.io import import_gaussian_scene
+
 class GaussianParameterLayer(keras.layers.Layer):
     """
     Keras Layer that imports and holds Gaussian parameters as trainable weights.
     """
 
-    def __init__(self, scene_dir, trainable=True, **kwargs):
+    def __init__(self, scene_dir, trainable=True, total_gaussians=None **kwargs):
         super().__init__(**kwargs)
         self.scene_dir = scene_dir
         self.trainable_flag = trainable
 
-        colors, positions, rotations, translations, scales, opacities = import_gaussian_scene(self.scene_dir)
+        colors, positions, rotations, translations, scales, opacities = import_gaussian_scene(self.scene_dir, total_gaussians=total_gaussians)
 
         # Add weights for each parameter
         self.colors = self.add_weight(
