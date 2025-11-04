@@ -1,3 +1,9 @@
+
+import keras
+import numpy as np
+import matplotlib.pyplot as plt
+from tqdm.auto import tqdm
+
 class GaussianParameterLayer(keras.layers.Layer):
     """
     Keras Layer that imports and holds Gaussian parameters as trainable weights.
