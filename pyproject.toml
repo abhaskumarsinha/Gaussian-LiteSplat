@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "litesplat"
+version = "0.1.0"
+description = "LiteSplat — A minimal, portable Gaussian Splatting sandbox for rapid small-scale experimentation and performance insights in pure Python and Keras."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Abhas Kumar Sinha", email = "abhaskumarsinha@gmail.com" }
+]
+maintainers = [
+    { name = "Abhas Kumar Sinha", email = "abhaskumarsinha@gmail.com" }
+]
+homepage = "https://abhaskumarsinha.github.io"
+keywords = ["gaussian-splatting", "keras", "3d-rendering", "neural-rendering", "research", "python"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
+
+dependencies = [
+    "keras>=3.10",
+    "numpy>=1.24",
+    "matplotlib>=3.7",
+    "tqdm>=4.66",
+    "Pillow>=10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "jupyter>=1.0",
+    "black>=24.0",
+    "flake8>=7.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["litesplat*"]
+exclude = ["tests", "benchmarks", "examples"]
+
+[tool.setuptools]
+package-dir = { "" = "." }
+
+[tool.black]
+line-length = 88
+target-version = ["py39", "py310", "py311", "py312"]
+
+[tool.isort]
+profile = "black"
