@@ -9,14 +9,17 @@ description = "LiteSplat — A minimal, portable Gaussian Splatting sandbox for 
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "Apache-2.0" }
+
 authors = [
     { name = "Abhas Kumar Sinha", email = "abhaskumarsinha@gmail.com" }
 ]
+
 maintainers = [
     { name = "Abhas Kumar Sinha", email = "abhaskumarsinha@gmail.com" }
 ]
-homepage = "https://abhaskumarsinha.github.io"
+
 keywords = ["gaussian-splatting", "keras", "3d-rendering", "neural-rendering", "research", "python"]
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
@@ -41,6 +44,11 @@ dev = [
     "black>=24.0",
     "flake8>=7.0",
 ]
+
+[project.urls]
+Homepage = "https://abhaskumarsinha.github.io"
+Repository = "https://github.com/abhaskumarsinha/litesplat"
+Issues = "https://github.com/abhaskumarsinha/litesplat/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
