@@ -1,4 +1,4 @@
-import torch
+
 
 
 class Renderer(keras.layers.Layer):
@@ -18,6 +18,7 @@ class Renderer(keras.layers.Layer):
         self.default_width = default_width
 
         if torch_compile:
+            import torch
             for layer in self.camera_layers:
                 torch.compile(layer, fullgraph=True)
 
