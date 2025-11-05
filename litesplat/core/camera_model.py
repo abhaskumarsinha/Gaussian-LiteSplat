@@ -385,7 +385,7 @@ class CameraLayer(keras.layers.Layer):
         rendered_colors = keras.ops.zeros((len(XY_all), 3), dtype='float32')
 
         # Step 4: render each batch
-        for i in tqdm(range(0, len(XY_all), batch_size), desc=f"Rendering downsampled {target_W}x{target_H}"):
+        for i in range(0, len(XY_all), batch_size):
             XY_batch = XY_all[i:i + batch_size]
             colors_out = self.render_pixel_color(XY_batch)
             rendered_colors[i:i + batch_size] = colors_out
