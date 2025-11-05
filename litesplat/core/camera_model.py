@@ -26,6 +26,8 @@ class CameraLayer(keras.layers.Layer):
                  trainable_extrinsics=False,
                  camera_index=0,
                  max_gaussians=None,
+                 output_h=None,
+                 output_w=None,
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -57,7 +59,10 @@ class CameraLayer(keras.layers.Layer):
         if images_dir is not None:
             path = os.path.join(images_dir, self.image_name)
             image = Image.open(path).convert("RGB")
-            image = image.resize((self.width, self.height))
+            if output_h and output_w is None:
+                image = image.resize((self.width, self.height))
+            else:
+                image = image.resize((output_w, output_h))
             image = image.transpose(Image.FLIP_TOP_BOTTOM)
             self.y_real = keras.ops.convert_to_tensor(image)
 
