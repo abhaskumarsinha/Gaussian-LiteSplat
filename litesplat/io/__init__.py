@@ -14,7 +14,7 @@ Example
 WIP
 """
 
-from .import_gaussians import import_gaussian_scene
+from .import_gaussians import import_gaussian_scene, save_gaussians
 from .COLMAP import convert_colmap_to_gaussians  # Assuming COLMAP.py defines this function
 
 __all__ = [
