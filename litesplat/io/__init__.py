@@ -14,13 +14,12 @@ Example
 WIP
 """
 
-from .import_gaussians import import_gaussian_scene, save_gaussians
+from .import_gaussians import import_gaussian_scene
 from .COLMAP import convert_colmap_to_gaussians  # Assuming COLMAP.py defines this function
 
 __all__ = [
     "import_gaussian_scene",
     "convert_colmap_to_gaussians",
-    "save_gaussians",
 ]
 
 __version__ = "0.1.0"
