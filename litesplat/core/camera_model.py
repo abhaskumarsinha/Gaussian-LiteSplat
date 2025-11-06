@@ -123,11 +123,11 @@ class CameraLayer(keras.layers.Layer):
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
     
         # Convert tensors to numpy arrays
-        positions = self.positions.numpy()
-        colors = self.colors.numpy()
-        rotations = self.rotations.numpy()
-        scales = self.scales.numpy() if hasattr(self, "scales") else np.array([default_scale])
-        opacities = self.opacities.numpy() if hasattr(self, "opacities") else np.array([default_opacity])
+        positions = self.gaussians.positions.numpy()
+        colors = self.gaussians.colors.numpy()
+        rotations = self.gaussians.rotations.numpy()
+        scales = self.gaussians.scales.numpy() if hasattr(self, "scales") else np.array([default_scale])
+        opacities = self.gaussians.opacities.numpy() if hasattr(self, "opacities") else np.array([default_opacity])
     
         num_gaussians = positions.shape[0]
         gaussians = []
