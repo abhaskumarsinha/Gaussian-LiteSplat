@@ -114,38 +114,55 @@ class CameraLayer(keras.layers.Layer):
 
     def save_gaussians(self, filepath, default_scale=(0.005, 0.005, 0.005), default_opacity=0.8):
         """
-        Save all Gaussian parameters into a JSON file.
-        Each Gaussian is represented as a dictionary with keys:
-        position, color, rotation, translation, scale, opacity.
+        Save all Gaussian parameters into a JSON file. Correctly reads self.gaussians.* variables.
         """
     
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        # ensure dir exists (handle empty dirname)
+        dirname = os.path.dirname(filepath)
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
     
-        # Convert tensors to numpy arrays
+        # read required fields (raise if missing)
         positions = self.gaussians.positions.numpy()
         colors = self.gaussians.colors.numpy()
         rotations = self.gaussians.rotations.numpy()
-        scales = self.gaussians.scales.numpy() if hasattr(self, "scales") else np.array([default_scale])
-        opacities = self.gaussians.opacities.numpy() if hasattr(self, "opacities") else np.array([default_opacity])
     
-        num_gaussians = positions.shape[0]
+        n = positions.shape[0]
+    
+        # scales: if missing, create a (n,3) fallback filled with default_scale
+        if hasattr(self.gaussians, "scales"):
+            scales = self.gaussians.scales.numpy()
+            # if shape is (n,) or (n,1) convert to (n,3) if necessary
+            if scales.ndim == 1:
+                scales = np.tile(scales[:, None], (1, 3))
+            elif scales.shape[1] == 1:
+                scales = np.tile(scales, (1, 3))
+        else:
+            scales = np.tile(np.asarray(default_scale)[None, :], (n, 1))
+    
+        # opacities: make sure shape (n,)
+        if hasattr(self.gaussians, "opacities"):
+            opacities = self.gaussians.opacities.numpy().reshape(-1)
+        else:
+            opacities = np.full((n,), float(default_opacity))
+    
         gaussians = []
-    
-        for i in range(num_gaussians):
+        for i in range(n):
             gaussian = {
                 "position": positions[i].tolist(),
                 "color": colors[i].tolist(),
                 "rotation": rotations[i].tolist(),
                 "translation": positions[i].tolist(),
-                "scale": scales[i].tolist() if i < len(scales) else list(default_scale),
-                "opacity": float(opacities[i]) if i < len(opacities) else float(default_opacity),
+                "scale": scales[i].tolist(),
+                "opacity": float(opacities[i]),
             }
             gaussians.append(gaussian)
     
         with open(filepath, "w") as f:
             json.dump(gaussians, f, indent=4)
     
-        print(f"✅ Saved {num_gaussians} Gaussians to {filepath}")
+        print(f"✅ Saved {n} Gaussians to {filepath}")
+
 
 
     def get_sorted_keys(self):
