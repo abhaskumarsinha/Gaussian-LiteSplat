@@ -51,7 +51,7 @@ def parse_args():
 
     parser.add_argument("--output_h", type=int, default=int(48 * 1.5))
     parser.add_argument("--output_w", type=int, default=int(64 * 1.5))
-    parser.add_argument("--output_gaussians", type=str, default="gaussians.JSON")
+    parser.add_argument("--output_gaussians", type=str, default="gaussians.json")
 
     parser.add_argument("--cam_import", type=int, default=45)
     parser.add_argument("--train_cams", type=int, default=15)
