@@ -2,35 +2,33 @@
 """
 colmap_camera_generator.py
 
-Generate a camera.json file (COLMAP-like JSON entries) describing a camera path
-that orbits around a target point on a circular trajectory.
 
-Features:
-- Orbit around a specified axis (x, y, or z).
-- Choose radius, number of frames, and center point.
-- Output rotation as either world->camera (R_w2c) or camera->world (R_c2w).
-- Output translation as camera center (C) or as the COLMAP-style translation t = -R * C.
-- Set intrinsics (fx, fy, cx, cy, width, height), image name prefix and start index.
+New features summary (no need to open the file to read this — the canvas contains the code):
+- --bbox minx miny minz maxx maxy maxz : compute center and automatic radius from object bounds
+- --object-centers-file FILE : load JSON array of object centers [[x,y,z], ...]
+- --radius-scale SCALE : multiply auto-computed radius by this factor
+- --orbit-each : if provided, the script will generate an orbit around *each* object center
+                  sequentially (use --frames-per-object to control frames per object)
+- --frames-per-object N : used with --orbit-each to specify how many frames around each object
+- If neither --bbox nor --object-centers-file are provided, behavior falls back to single
+  center at --center (same as earlier script).
 
-The JSON format produced matches the structure shown in your example — a list of
-entries, each with keys: camera_id, model, image_name, fx, fy, cx, cy, width, height,
-rotation (3x3 list), translation (3 list).
+Examples:
+1) Orbit around a bounding box center, auto radius:
+python3 colmap_camera_generator.py --bbox -1 -1 -1 1 2 3 --radius-scale 1.2 --num-frames 60 \
+  --fx 1552.54 --fy 1552.54 --cx 320 --cy 240 --width 640 --height 480 \
+  --image-prefix templeR --output camera.json
 
-If your importer strictly expects a different convention, use the --rotation_conv and
---translation_mode flags to switch conventions.
-
-Example:
-python3 colmap_camera_generator.py \
-  --axis y --radius 3.8 --num-frames 36 --center 0 0 0 \
-  --output camera.json --image_prefix templeR --start_index 1 \
-  --fx 1552.5417644224121 --fy 1552.5417644224121 --cx 320 --cy 240 \
-  --width 640 --height 480
+2) Orbit each object center (three objects) with 30 frames each:
+python3 colmap_camera_generator.py --object-centers-file centers.json --orbit-each --frames-per-object 30 \
+  --fx 1552.54 --fy 1552.54 --cx 320 --cy 240 --width 640 --height 480 --image-prefix templeR
 
 """
 
 import argparse
 import json
 import math
+import os
 from typing import List, Tuple
 
 import numpy as np
@@ -44,22 +42,10 @@ def normalize(v: np.ndarray) -> np.ndarray:
 
 
 def look_at_rotation(camera_pos: np.ndarray, target: np.ndarray, up_hint: np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Build camera rotation matrices from camera position and target "look-at" point.
-
-    Returns (R_c2w, R_w2c)
-    - R_c2w: 3x3 rotation matrix mapping camera coordinates -> world coordinates
-             (columns are the camera axes in world frame: right, up, forward)
-    - R_w2c: its transpose (world -> camera)
-
-    By convention here forward = normalize(target - camera_pos) (i.e. camera looks towards
-    the target from the camera position).
-    """
     if up_hint is None:
         up_hint = np.array([0.0, 1.0, 0.0])
 
     forward = normalize(np.array(target) - np.array(camera_pos))
-    # If forward is collinear with up_hint, choose a different up
     up_hint = normalize(np.array(up_hint))
     if abs(np.dot(forward, up_hint)) > 0.999:
         up_hint = np.array([1.0, 0.0, 0.0])
@@ -67,38 +53,24 @@ def look_at_rotation(camera_pos: np.ndarray, target: np.ndarray, up_hint: np.nda
     right = normalize(np.cross(forward, up_hint))
     up = np.cross(right, forward)
 
-    # R_c2w: columns are [right, up, forward]
     R_c2w = np.stack([right, up, forward], axis=1)
     R_w2c = R_c2w.T
     return R_c2w, R_w2c
 
 
 def circle_positions(axis: str, radius: float, center: np.ndarray, num_frames: int, start_angle_deg: float = 0.0) -> List[np.ndarray]:
-    """
-    Generate camera center positions on a circle around `center` on the plane perpendicular
-    to `axis`.
-
-    - axis: 'x', 'y', or 'z' (axis to rotate around)
-    - radius: radius of circular path
-    - center: 3-array center of rotation
-    - num_frames: how many discrete positions
-    - start_angle_deg: starting angle offset (degrees)
-    """
     centers = []
     for i in range(num_frames):
         theta = 2.0 * math.pi * (i / float(num_frames)) + math.radians(start_angle_deg)
         if axis == 'y':
-            # rotate around y: circle in x-z plane
             x = center[0] + radius * math.cos(theta)
             y = center[1]
             z = center[2] + radius * math.sin(theta)
         elif axis == 'x':
-            # rotate around x: circle in y-z plane
             x = center[0]
             y = center[1] + radius * math.cos(theta)
             z = center[2] + radius * math.sin(theta)
         elif axis == 'z':
-            # rotate around z: circle in x-y plane
             x = center[0] + radius * math.cos(theta)
             y = center[1] + radius * math.sin(theta)
             z = center[2]
@@ -114,6 +86,22 @@ def matrix_to_list3x3(m: np.ndarray) -> List[List[float]]:
 
 def vector_to_list3(v: np.ndarray) -> List[float]:
     return [float(v[i]) for i in range(3)]
+
+
+def compute_center_and_radius_from_bbox(bbox: List[float], radius_scale: float = 1.0) -> Tuple[np.ndarray, float]:
+    minp = np.array(bbox[:3], dtype=float)
+    maxp = np.array(bbox[3:], dtype=float)
+    center = 0.5 * (minp + maxp)
+    diag = np.linalg.norm(maxp - minp)
+    radius = 0.5 * diag * radius_scale
+    return center, float(radius)
+
+
+def load_object_centers_from_file(path: str) -> List[np.ndarray]:
+    with open(path, 'r') as f:
+        data = json.load(f)
+    centers = [np.array(c, dtype=float) for c in data]
+    return centers
 
 
 def generate_camera_entries(
@@ -136,25 +124,17 @@ def generate_camera_entries(
 
     entries = []
     for i, cam_pos in enumerate(centers):
-        # build rotation matrices
         R_c2w, R_w2c = look_at_rotation(cam_pos, np.array(center, dtype=float), up_hint=np.array(up, dtype=float))
 
-        # choose rotation matrix convention
         if rotation_conv == 'w2c':
             R_out = R_w2c
-        elif rotation_conv == 'c2w':
-            R_out = R_c2w
         else:
-            raise ValueError("rotation_conv must be 'w2c' or 'c2w'")
+            R_out = R_c2w
 
-        # choose translation mode
         if translation_mode == 'center':
             t_out = cam_pos
-        elif translation_mode == 't':
-            # t = -R_w2c * C  (world->camera translation)
-            t_out = -R_w2c.dot(cam_pos)
         else:
-            raise ValueError("translation_mode must be 'center' or 't'")
+            t_out = -R_w2c.dot(cam_pos)
 
         img_idx = start_index + i
         img_name = f"{image_prefix}{str(img_idx).zfill(pad)}.png"
@@ -179,9 +159,10 @@ def generate_camera_entries(
 def cli():
     p = argparse.ArgumentParser(description='Generate camera.json with orbiting cameras (COLMAP-like format).')
     p.add_argument('--axis', choices=['x', 'y', 'z'], default='y', help='Axis to orbit around (default: y)')
-    p.add_argument('--radius', type=float, required=True, help='Radius of the orbit')
-    p.add_argument('--num-frames', type=int, default=36, help='Number of frames to generate')
-    p.add_argument('--center', type=float, nargs=3, default=[0.0, 0.0, 0.0], help='Center of orbit (x y z)')
+    p.add_argument('--radius', type=float, default=None, help='Radius of the orbit (if omitted, computed from bbox or object centers)')
+    p.add_argument('--num-frames', type=int, default=36, help='Number of frames to generate (used when not orbiting each object)')
+    p.add_argument('--frames-per-object', type=int, default=36, help='Frames per object when using --orbit-each')
+    p.add_argument('--center', type=float, nargs=3, default=[0.0, 0.0, 0.0], help='Fallback center of orbit (x y z)')
     p.add_argument('--up', type=float, nargs=3, default=[0.0, 1.0, 0.0], help='Up vector hint for look-at')
     p.add_argument('--start-angle-deg', type=float, default=0.0, help='Starting angle in degrees')
     p.add_argument('--image-prefix', type=str, default='image', help='Image filename prefix')
@@ -199,28 +180,98 @@ def cli():
                    help="Rotation output convention: 'w2c' (world->camera) or 'c2w' (camera->world).")
     p.add_argument('--translation-mode', choices=['center', 't'], default='center',
                    help="Translation output: 'center' to write camera center coords, or 't' to write t = -R * C (world->camera translation).")
+    p.add_argument('--bbox', type=float, nargs=6, default=None,
+                   help='Bounding box as minx miny minz maxx maxy maxz (used to compute center and auto radius)')
+    p.add_argument('--object-centers-file', type=str, default=None,
+                   help='JSON file containing array of object centers [[x,y,z], ...]')
+    p.add_argument('--radius-scale', type=float, default=1.0, help='Scale applied to auto-computed radius from bbox')
+    p.add_argument('--orbit-each', action='store_true', help='If set, orbit around each object center sequentially')
     p.add_argument('--output', type=str, default='camera.json', help='Output JSON filename')
 
     args = p.parse_args()
 
     intr = {'fx': args.fx, 'fy': args.fy, 'cx': args.cx, 'cy': args.cy, 'width': args.width, 'height': args.height}
 
-    entries = generate_camera_entries(
-        axis=args.axis,
-        radius=args.radius,
-        num_frames=args.num_frames,
-        center=tuple(args.center),
-        up=tuple(args.up),
-        start_angle_deg=args.start_angle_deg,
-        image_prefix=args.image_prefix,
-        start_index=args.start_index,
-        intrinsics=intr,
-        camera_id=args.camera_id,
-        model=args.model,
-        rotation_conv=args.rotation_conv,
-        translation_mode=args.translation_mode,
-        pad=args.pad,
-    )
+    # Determine object centers and radius
+    object_centers = None
+    bbox_center = None
+    auto_radius = None
+
+    if args.object_centers_file:
+        if not os.path.exists(args.object_centers_file):
+            raise FileNotFoundError(f"Object centers file not found: {args.object_centers_file}")
+        object_centers = load_object_centers_from_file(args.object_centers_file)
+
+    if args.bbox is not None:
+        bbox_center, auto_radius = compute_center_and_radius_from_bbox(args.bbox, radius_scale=args.radius_scale)
+
+    # If object centers provided and orbit-each -> orbit each center separately
+    entries = []
+    cur_index = args.start_index
+
+    if args.orbit_each and object_centers is not None:
+        for obj_idx, obj_center in enumerate(object_centers):
+            r = args.radius if args.radius is not None else (auto_radius if auto_radius is not None else np.linalg.norm(obj_center - np.array(args.center)))
+            frames = args.frames_per_object
+            img_prefix = f"{args.image_prefix}_obj{obj_idx}_"
+            gen = generate_camera_entries(
+                axis=args.axis,
+                radius=float(r),
+                num_frames=frames,
+                center=tuple(obj_center.tolist()),
+                up=tuple(args.up),
+                start_angle_deg=args.start_angle_deg,
+                image_prefix=img_prefix,
+                start_index=cur_index,
+                intrinsics=intr,
+                camera_id=args.camera_id,
+                model=args.model,
+                rotation_conv=args.rotation_conv,
+                translation_mode=args.translation_mode,
+                pad=args.pad,
+            )
+            entries.extend(gen)
+            cur_index += frames
+
+    else:
+        # compute a single center: prefer bbox center, then centroid of object_centers, then fallback to args.center
+        if bbox_center is not None:
+            center = bbox_center
+        elif object_centers is not None:
+            center = np.mean(np.stack([c for c in object_centers], axis=0), axis=0)
+        else:
+            center = np.array(args.center, dtype=float)
+
+        # compute radius: prefer user radius, then auto_radius, then distance of first object center (if any), otherwise user radius or default
+        if args.radius is not None:
+            r = float(args.radius)
+        elif auto_radius is not None:
+            r = auto_radius
+        elif object_centers is not None and len(object_centers) > 0:
+            # set radius to average distance from centroid to object centers (if multiple)
+            dists = [np.linalg.norm(c - center) for c in object_centers]
+            avg = float(np.mean(dists))
+            r = avg if avg > 1e-6 else max(1.0, float(np.max(dists)))
+        else:
+            r = 3.0  # fallback radius
+
+        gen = generate_camera_entries(
+            axis=args.axis,
+            radius=float(r),
+            num_frames=args.num_frames,
+            center=tuple(center.tolist()),
+            up=tuple(args.up),
+            start_angle_deg=args.start_angle_deg,
+            image_prefix=args.image_prefix,
+            start_index=cur_index,
+            intrinsics=intr,
+            camera_id=args.camera_id,
+            model=args.model,
+            rotation_conv=args.rotation_conv,
+            translation_mode=args.translation_mode,
+            pad=args.pad,
+        )
+        entries.extend(gen)
 
     with open(args.output, 'w') as f:
         json.dump(entries, f, indent=4)
