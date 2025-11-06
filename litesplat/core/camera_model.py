@@ -327,7 +327,7 @@ class CameraLayer(keras.layers.Layer):
         proj = self.get_projection_matrix(fx, fy, cx, cy)
 
         # Step 2: Scaling matrices
-        scales_matrices = keras.ops.exp(self.scaling_matrices)
+        scales_matrices = self.scaling_matrices
 
         # Step 2: Project Gaussians to 2D
         mu_cam = keras.ops.einsum('ij,bj->bi', R, self.gaussians.positions) + t
