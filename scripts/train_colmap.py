@@ -142,7 +142,9 @@ def main():
             logger.info(f"Epoch [{epoch + 1}/{args.num_epochs}]  Loss: {loss.item():.6f}")
             for cam in cams:
                 cam.get_sorted_keys()
-            cams[0].save_gaussians(args.output_gaussians)
+            base, ext = os.path.splitext(args.output_gaussians)
+            epoch_filename = f"{base}_epoch{epoch}{ext}"
+            cams[0].save_gaussians(epoch_filename)
 
         del y_pred, loss
         torch.cuda.empty_cache()
