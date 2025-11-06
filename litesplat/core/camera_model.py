@@ -113,6 +113,41 @@ class CameraLayer(keras.layers.Layer):
 
         self.get_sorted_keys()
 
+    def save_gaussians(self, filepath, default_scale=(0.005, 0.005, 0.005), default_opacity=0.8):
+        """
+        Save all Gaussian parameters into a JSON file.
+        Each Gaussian is represented as a dictionary with keys:
+        position, color, rotation, translation, scale, opacity.
+        """
+    
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    
+        # Convert tensors to numpy arrays
+        positions = self.positions.numpy()
+        colors = self.colors.numpy()
+        rotations = self.rotations.numpy()
+        scales = self.scales.numpy() if hasattr(self, "scales") else np.array([default_scale])
+        opacities = self.opacities.numpy() if hasattr(self, "opacities") else np.array([default_opacity])
+    
+        num_gaussians = positions.shape[0]
+        gaussians = []
+    
+        for i in range(num_gaussians):
+            gaussian = {
+                "position": positions[i].tolist(),
+                "color": colors[i].tolist(),
+                "rotation": rotations[i].tolist(),
+                "translation": positions[i].tolist(),
+                "scale": scales[i].tolist() if i < len(scales) else list(default_scale),
+                "opacity": float(opacities[i]) if i < len(opacities) else float(default_opacity),
+            }
+            gaussians.append(gaussian)
+    
+        with open(filepath, "w") as f:
+            json.dump(gaussians, f, indent=4)
+    
+        print(f"✅ Saved {num_gaussians} Gaussians to {filepath}")
+
 
     def get_sorted_keys(self):
         reference_vector = keras.ops.convert_to_tensor(self.translations)
