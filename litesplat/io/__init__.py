@@ -20,6 +20,7 @@ from .COLMAP import convert_colmap_to_gaussians  # Assuming COLMAP.py defines th
 __all__ = [
     "import_gaussian_scene",
     "convert_colmap_to_gaussians",
+    "save_gaussians",
 ]
 
 __version__ = "0.1.0"
