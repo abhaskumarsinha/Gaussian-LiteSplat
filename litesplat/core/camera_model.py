@@ -137,8 +137,8 @@ class CameraLayer(keras.layers.Layer):
                 "color": colors[i].tolist(),
                 "rotation": rotations[i].tolist(),
                 "translation": positions[i].tolist(),
-                "scale": scales[i].tolist() if i < len(scales) else list(default_scale),
-                "opacity": float(opacities[i]) if i < len(opacities) else float(default_opacity),
+                "scale": scales[i].tolist()
+                "opacity": float(opacities[i]),
             }
             gaussians.append(gaussian)
     
