@@ -413,6 +413,7 @@ class CameraLayer(keras.layers.Layer):
 
         # Step 8: Alpha Rendering
         colors_out = self.alpha_blend(sorted_gaussians, sorted_opacities, sorted_weights)
+        del P_mu, delta, net_rot, T, Sigma2D, Sigma_inv, mahalanobis, weights, sorted_gaussians, sorted_opacities, sorted_weights
 
         return colors_out
 
