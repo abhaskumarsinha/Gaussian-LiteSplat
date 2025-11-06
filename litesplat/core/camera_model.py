@@ -123,15 +123,15 @@ class CameraLayer(keras.layers.Layer):
             os.makedirs(dirname, exist_ok=True)
     
         # read required fields (raise if missing)
-        positions = self.gaussians.positions.numpy()
-        colors = self.gaussians.colors.numpy()
-        rotations = self.gaussians.rotations.numpy()
+        positions = keras.ops.convert_to_numpy(self.gaussians.positions)
+        colors = keras.ops.convert_to_numpy(self.gaussians.colors)
+        rotations = keras.ops.convert_to_numpy(self.gaussians.rotations)
     
         n = positions.shape[0]
     
         # scales: if missing, create a (n,3) fallback filled with default_scale
         if hasattr(self.gaussians, "scales"):
-            scales = self.gaussians.scales.numpy()
+            scales = keras.ops.convert_to_numpy(self.gaussians.scales)
             # if shape is (n,) or (n,1) convert to (n,3) if necessary
             if scales.ndim == 1:
                 scales = np.tile(scales[:, None], (1, 3))
@@ -142,7 +142,7 @@ class CameraLayer(keras.layers.Layer):
     
         # opacities: make sure shape (n,)
         if hasattr(self.gaussians, "opacities"):
-            opacities = self.gaussians.opacities.numpy().reshape(-1)
+            opacities = keras.ops.convert_to_numpy(self.gaussians.opacities).reshape(-1)
         else:
             opacities = np.full((n,), float(default_opacity))
     
