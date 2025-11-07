@@ -174,7 +174,7 @@ In the **`Gaussian-LiteSplat`** directory, run:
 Below is an example experiment comparing the **initial imported COLMAP scene** and the **trained Gaussian LiteSplat output**.
 
 The dataset used is **TempleRing** from the [Middlebury Multiview Dataset](https://vision.middlebury.edu/mview/data/),  
-featuring 15 camera views. The scene was trained with **2200 Gaussians** for **~45 minutes** on a CPU-only setup.
+featuring 15 camera views. The scene was trained with **2200 Gaussians** for **~45 minutes** on a GPU setup.
 
 <br/>
 
@@ -196,7 +196,7 @@ featuring 15 camera views. The scene was trained with **2200 Gaussians** for **~
 
 ---
 
-> ⚡ *These results demonstrate that even a CPU-based, minimal implementation of Gaussian Splatting can produce  
+> ⚡ *These results demonstrate that even a simple GPU, minimal implementation of Gaussian Splatting can produce  
 > meaningful multi-view 3D reconstructions with limited hardware and simple training pipelines.*
 
 
