@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "litesplat"
-version = "0.1.0"
+version = "0.1.1"
 description = "LiteSplat — A minimal, portable Gaussian Splatting sandbox for rapid small-scale experimentation and performance insights in pure Python and Keras."
 readme = "README.md"
 requires-python = ">=3.9"
